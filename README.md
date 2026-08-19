@@ -7,10 +7,6 @@ break that expected relationship: they are highly active but carry high BMI (**h
 barely active yet carry low BMI (**low-decoupled, LD**). This repository holds the code used to
 characterise the phenomic, neuroimaging, genetic, and causal architecture of those two decoupled states.
 
-Each decoupled group is contrasted against an **MVPA-matched coupled reference** — a control group drawn
-from the *same* activity stratum that differs only in BMI. That design is what makes the two contrasts
-interpretable as decoupling rather than as activity or adiposity alone.
-
 ---
 
 ## Study overview
