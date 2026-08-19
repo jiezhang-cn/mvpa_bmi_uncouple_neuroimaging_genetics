@@ -1,42 +1,43 @@
-#GCTA COJO Conditional Analysis Pipeline
-# ─────────────────────────────────────────────────────────────────────────────
-# Step 1  : 逐染色体 GCTA --cojo-slct (直接用 per-chr LD reference)
-# Step 2  : 合并所有染色体结果
-# Step 2.5: 折叠 long-range high-LD 区域内的多余信号
-# Step 3  : 过滤 (原始 GWAS P < 5e-8)
+#!/bin/bash
+# GCTA COJO Conditional Analysis Pipeline
+# ----------------------------------------------------------------------------
+# Step 1  : GCTA --cojo-slct per chromosome (using the per-chr LD reference)
+# Step 2  : merge results across chromosomes
+# Step 2.5: collapse surplus signals inside long-range high-LD regions
+# Step 3  : filter (original GWAS P < 5e-8)
 #
 # Reference for long-range LD regions:
 #   Price AL et al. Am J Hum Genet. 2008;83(1):132-135.
 #   Anderson CA et al. Nat Protoc. 2010;5(9):1564-73.
-###############################################################################
+# ============================================================================
 
 set -e
 
 # ============================================================================
-# 配置参数
+# Configuration
 # ============================================================================
 
 GCTA="$HOME/miniforge3/envs/gcta_env/bin/gcta"
 
 
-# LD 参考面板目录 (per-chromosome: ref_chr1, ref_chr2, ..., ref_chr22)
+# LD reference panel directory (per-chromosome: ref_chr1, ref_chr2, ..., ref_chr22)
 REF_DIR="/test/jzhang_data_depository/gcta_ukb_unrelated_ref"
 
 # GWAS summary statistics
 GWAS_DIR="/home/Disk/Data2/imputation.bgen/PA_obesity_uncouple_GWAS"
 
-# GWAS 文件 -> 对应输出目录
+# GWAS file -> output directory
 declare -A GWAS_MAP
-GWAS_MAP["${GWAS_DIR}/high_mvpa_bmi_uncouple.ma"]="/home/user2/jzhang_data/Dissertation/results/high_pa_obesity_uncouple_results/gcta_cojo_results"
-GWAS_MAP["${GWAS_DIR}/low_mvpa_bmi_uncouple.ma"]="/home/user2/jzhang_data/Dissertation/results/low_pa_obesity_uncouple_results/gcta_cojo_results"
+GWAS_MAP["${GWAS_DIR}/high_mvpa_bmi_uncouple.ma"]="/home/user2/jzhang_data/results/high_pa_obesity_uncouple_results/gcta_cojo_results"
+GWAS_MAP["${GWAS_DIR}/low_mvpa_bmi_uncouple.ma"]="/home/user2/jzhang_data/results/low_pa_obesity_uncouple_results/gcta_cojo_results"
 
-# 按顺序执行的文件列表
+# files processed in order
 GWAS_FILES=(
     "${GWAS_DIR}/high_mvpa_bmi_uncouple.ma"
     "${GWAS_DIR}/low_mvpa_bmi_uncouple.ma"
 )
 
-# 分析参数
+# Analysis parameters
 COJO_P="5e-8"
 ORIG_P="5e-8"
 MAF=0.01
@@ -45,13 +46,13 @@ COJO_COLLINEAR=0.9
 THREADS=24
 
 # ============================================================================
-# Long-range high-LD 区域定义 (hg19 / GRCh37)
+# Long-range high-LD region definitions (hg19 / GRCh37)
 # ============================================================================
-# 格式: "CHR START_BP END_BP REGION_NAME"
-# 来源:
+# Format: "CHR START_BP END_BP REGION_NAME"
+# Sources:
 #   - Price AL et al. Am J Hum Genet 2008;83:132-135
 #   - Anderson CA et al. Nat Protoc 2010;5:1564-73
-#   - 部分区域边界略有扩展以覆盖不同研究中报告的范围
+#   - some boundaries are widened slightly to cover the ranges reported across studies
 
 LONG_RANGE_LD_REGIONS=(
     "1   48000000   52000000   1p33.3-p32.3"
@@ -81,7 +82,7 @@ LONG_RANGE_LD_REGIONS=(
 )
 
 # ============================================================================
-# 函数
+# Functions
 # ============================================================================
 
 log_msg() {
@@ -89,7 +90,7 @@ log_msg() {
 }
 
 # ============================================================================
-# Step 1: GCTA COJO per chromosome (直接用 per-chr bfile)
+# Step 1: GCTA COJO per chromosome (using the per-chr bfile)
 # ============================================================================
 
 run_cojo_per_chr() {
@@ -102,7 +103,7 @@ run_cojo_per_chr() {
         local BFILE="${REF_DIR}/ref_chr${CHR}"
         local OUT_PREFIX="${OUT_DIR}/${TRAIT}_chr${CHR}"
 
-        # 检查该染色体参考文件是否存在
+        # check that the reference files for this chromosome exist
         if [ ! -f "${BFILE}.bed" ] || [ ! -f "${BFILE}.bim" ] || [ ! -f "${BFILE}.fam" ]; then
             log_msg "    [WARNING] Chr${CHR} reference files incomplete, skipping."
             continue
@@ -167,7 +168,7 @@ merge_results() {
 }
 
 # ============================================================================
-# Step 2.5: 折叠 long-range high-LD 区域内的多余信号
+# Step 2.5: collapse surplus signals inside long-range high-LD regions
 # ============================================================================
 
 collapse_long_range_ld() {
@@ -184,14 +185,14 @@ collapse_long_range_ld() {
 
     local N_BEFORE=$(tail -n +2 "${INPUT_FILE}" | wc -l)
 
-    # ── 生成区域定义的临时文件 ──
+    # ---- write the region definitions to a temp file ----
     local REGION_FILE="${OUT_DIR}/.tmp_lr_ld_regions.txt"
     > "${REGION_FILE}"
     for REGION in "${LONG_RANGE_LD_REGIONS[@]}"; do
         echo "${REGION}" >> "${REGION_FILE}"
     done
 
-    # ── AWK 实现折叠逻辑 ──
+    # ---- collapsing logic in AWK ----
     awk -v region_file="${REGION_FILE}" -v removed_file="${REMOVED_FILE}" '
     BEGIN {
         n_regions = 0
@@ -298,13 +299,13 @@ collapse_long_range_ld() {
 
     if [ ${N_REMOVED} -gt 0 ] && [ -f "${REMOVED_FILE}" ]; then
         log_msg "    Removed signals detail: ${REMOVED_FILE}"
-        log_msg "    ──────────────────────────────────────"
+        log_msg "    --------------------------------------"
         while IFS=$'\t' read -r SNP CHR BP PJ REGION KEPT; do
             if [ "${SNP}" = "SNP" ]; then continue; fi
             log_msg "    Removed: ${SNP} (chr${CHR}:${BP}, pJ=${PJ})"
             log_msg "             Region: ${REGION}, kept: ${KEPT}"
         done < "${REMOVED_FILE}"
-        log_msg "    ──────────────────────────────────────"
+        log_msg "    --------------------------------------"
     fi
 
     rm -f "${REGION_FILE}"
@@ -313,7 +314,7 @@ collapse_long_range_ld() {
 }
 
 # ============================================================================
-# Step 3: 过滤 (原始 GWAS P < threshold)
+# Step 3: filter (original GWAS P < threshold)
 # ============================================================================
 
 filter_by_original_p() {
@@ -355,7 +356,7 @@ filter_by_original_p() {
 }
 
 # ============================================================================
-# 主程序
+# Main
 # ============================================================================
 
 main() {
@@ -370,14 +371,14 @@ main() {
     log_msg "============================================================"
     echo ""
 
-    # 检查 GCTA
+    # check GCTA
     if [ ! -x "${GCTA}" ]; then
         log_msg "[ERROR] GCTA not found or not executable: ${GCTA}"
         exit 1
     fi
     log_msg "GCTA: $(${GCTA} --version 2>&1 | head -1 || echo 'version check failed')"
 
-    # 检查参考面板
+    # check the reference panel
     local REF_COUNT=0
     for CHR in $(seq 1 22); do
         if [ -f "${REF_DIR}/ref_chr${CHR}.bed" ]; then
@@ -391,7 +392,7 @@ main() {
         exit 1
     fi
 
-    # 打印 long-range LD 区域摘要
+    # print a summary of the long-range LD regions
     log_msg ""
     log_msg "Long-range high-LD regions (hg19):"
     for REGION in "${LONG_RANGE_LD_REGIONS[@]}"; do
@@ -401,7 +402,7 @@ main() {
     done
     echo ""
 
-    # ── 逐个 GWAS 文件处理 ──
+    # ---- process each GWAS file ----
     for GWAS_FILE in "${GWAS_FILES[@]}"; do
 
         TRAIT=$(basename "${GWAS_FILE}" .ma)
@@ -426,12 +427,12 @@ main() {
 
         # Step 1
         log_msg ""
-        log_msg "── Step 1: GCTA --cojo-slct per chromosome ──"
+        log_msg "-- Step 1: GCTA --cojo-slct per chromosome --"
         run_cojo_per_chr "${GWAS_FILE}" "${TRAIT}" "${OUT_DIR}"
 
         # Step 2
         log_msg ""
-        log_msg "── Step 2: Merge results across chromosomes ──"
+        log_msg "-- Step 2: Merge results across chromosomes --"
         N_TOTAL=$(merge_results "${TRAIT}" "${OUT_DIR}")
 
         if [ "${N_TOTAL}" = "0" ]; then
@@ -441,7 +442,7 @@ main() {
 
         # Step 2.5
         log_msg ""
-        log_msg "── Step 2.5: Collapse signals in long-range high-LD regions ──"
+        log_msg "-- Step 2.5: Collapse signals in long-range high-LD regions --"
         log_msg "  Ref: Price AL et al. Am J Hum Genet 2008;83:132-135"
         N_AFTER_LR=$(collapse_long_range_ld "${TRAIT}" "${OUT_DIR}")
 
@@ -452,7 +453,7 @@ main() {
 
         # Step 3
         log_msg ""
-        log_msg "── Step 3: Filter by original GWAS P < ${ORIG_P} ──"
+        log_msg "-- Step 3: Filter by original GWAS P < ${ORIG_P} --"
         filter_by_original_p "${GWAS_FILE}" "${TRAIT}" "${OUT_DIR}"
 
     done
@@ -463,9 +464,9 @@ main() {
     log_msg "============================================================"
 }
 
-# 日志目录
-LOG_DIR="/home/user2/jzhang_data/Dissertation/code"
+# log directory
+LOG_DIR="/home/user2/jzhang_data/code"
 mkdir -p "${LOG_DIR}"
 
-# 运行并保存日志
+# run and save the log
 main 2>&1 | tee "${LOG_DIR}/gcta_cojo_pipeline_$(date '+%Y%m%d_%H%M%S').log"

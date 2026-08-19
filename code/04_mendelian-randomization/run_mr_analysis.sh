@@ -1,11 +1,11 @@
 #!/bin/bash
-###############################################################################
+# ============================================================================
 #  Bi-directional MR + CAUSE pipeline
 #  Decoupled MVPA phenotypes (BMI-uncoupled) <-> Psychiatric disorders
-###############################################################################
+# ============================================================================
 set -uo pipefail
 
-BASE=/home/user2/jzhang_data/Dissertation
+BASE=/home/user2/jzhang_data
 OUT=${BASE}/results/mr_results
 mkdir -p ${OUT}/{exposure_dat,outcome_dat,harmonised,results,sensitivity,plots,logs,cache}
 
@@ -14,7 +14,7 @@ MVPA_LOW=/home/Disk/Data2/imputation.bgen/PA_obesity_uncouple_GWAS/low_mvpa_bmi_
 
 GWAS_DIR=${BASE}/data/psychiatric_trait_gwas
 CD_DIR=${GWAS_DIR}/Cross_disorder
-PREP_DIR=${BASE}/results/ldsc_full/prepared      # LDSC 阶段已 munge 前的 cleaned 文件
+PREP_DIR=${BASE}/results/ldsc_full/prepared      # cleaned files from the LDSC stage, pre-munge
 REF_BFILE=${BASE}/code/reference_data/g1000_eur
 PLINK_BIN=${BASE}/code/plink
 

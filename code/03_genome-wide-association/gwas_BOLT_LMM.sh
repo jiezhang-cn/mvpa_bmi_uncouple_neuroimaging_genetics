@@ -22,7 +22,7 @@ mkdir -p "$OUTPUT_DIR"
 
 for PHENO in "${PHENOTYPES[@]}"; do
     echo "=================================================="
-    echo "正在处理表型: $PHENO"
+    echo "Processing phenotype: $PHENO"
     echo "=================================================="
     $BOLT_CMD \
         --bed="$PLINK_BED" \

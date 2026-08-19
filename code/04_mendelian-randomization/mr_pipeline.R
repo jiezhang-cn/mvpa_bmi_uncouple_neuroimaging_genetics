@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-###############################################################################
+# ============================================================================
 #  Bi-directional MR + CAUSE
 #  Forward : Psychiatric disorders -> MVPA_{high,low}
 #  Reverse : MVPA_{high,low}        -> Psychiatric disorders
@@ -11,10 +11,10 @@
 #   4. Fresh run.log per invocation (overwrite, not append)
 #   5. 2SMR auto-retry with p<1e-5 IVs if <3 SNPs after harmonise
 #   6. CAUSE drops extreme SNPs (|z|>38, SE bad, non-finite) post-merge
-#   7. Stronger resume — pre-check both directions BEFORE any heavy IO
-#   8. ★ NEW: posterior SNP hard cap (POSTERIOR_SNP_CAP) to avoid cause() blow-up
-#   9. ★ NEW: withTimeout uses cpu=Inf, elapsed=... (wall-clock only)
-###############################################################################
+#   7. Stronger resume -- pre-check both directions BEFORE any heavy IO
+#   8. NEW: posterior SNP hard cap (POSTERIOR_SNP_CAP) to avoid cause() blow-up
+#   9. NEW: withTimeout uses cpu=Inf, elapsed=... (wall-clock only)
+# ============================================================================
 suppressPackageStartupMessages({
   library(optparse); library(data.table); library(dplyr)
   library(TwoSampleMR); library(MRPRESSO); library(ieugwasr)
@@ -63,10 +63,10 @@ BFILE <- opt$bfile
 CAUSE_TIMEOUT    <- 7200   # 120 min for cause()
 NUISANCE_TIMEOUT <- 5400   # 90 min for est_cause_params()
 
-# ---- ★ disorders requiring stricter exposure-pval threshold in CAUSE ----
+# ---- disorders requiring a stricter exposure-pval threshold in CAUSE ----
 STRICT_DISORDERS <- c("PTSD", "AUDIT_P", "ANX")
 
-# ---- ★ posterior SNP hard cap (CAUSE recommends ~1000) ----
+# ---- posterior SNP hard cap (CAUSE recommends ~1000) ----
 POSTERIOR_SNP_CAP <- 2000
 
 # Helper: file exists AND has non-zero size
@@ -332,7 +332,7 @@ clean_cause_X <- function(X){
 #    Resume: skip if results/{tag}_cause.rds already exists (non-empty)
 #    Timeout: wrap cause() and est_cause_params() in withTimeout()
 #             - uses cpu=Inf, elapsed=T (wall-clock only, avoids multithread CPU blowup)
-#    STRICT pval_thresh = 1e-4 for PTSD / AUDIT_P / ANX (others 1e-3)
+#    Strict pval_thresh = 1e-4 for PTSD / AUDIT_P / ANX (others 1e-3)
 #    Posterior SNP cap: trim to POSTERIOR_SNP_CAP after LD pruning if needed
 # ============================================================================
 run_cause <- function(exp_full, out_full, exp_name, out_name, outdir){
@@ -396,7 +396,7 @@ run_cause <- function(exp_full, out_full, exp_name, out_name, outdir){
       cat("    nuisance fail:", conditionMessage(e), "\n"); NULL })
   if (is.null(params)) return(NULL)
 
-  # ---- ★ STRICT pval_thresh for PTSD / AUDIT_P / ANX ----
+  # ---- strict pval_thresh for PTSD / AUDIT_P / ANX ----
   is_strict <- (exp_name %in% STRICT_DISORDERS) || (out_name %in% STRICT_DISORDERS)
   pthresh   <- if (is_strict) 1e-4 else 1e-3
   cat(sprintf("    pval_thresh = %.0e  %s\n", pthresh,
@@ -433,7 +433,7 @@ run_cause <- function(exp_full, out_full, exp_name, out_name, outdir){
   }
   cat("    SNPs after LD pruning (r2<0.1):", nrow(pruned), "\n")
 
-  # ---- ★ Hard cap on posterior SNP count ----
+  # ---- hard cap on posterior SNP count ----
   if (nrow(pruned) > POSTERIOR_SNP_CAP) {
     pruned <- pruned[order(pruned$pval), , drop = FALSE]
     pruned <- pruned[seq_len(POSTERIOR_SNP_CAP), , drop = FALSE]

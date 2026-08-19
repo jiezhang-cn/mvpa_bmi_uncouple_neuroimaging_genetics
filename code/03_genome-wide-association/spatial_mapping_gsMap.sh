@@ -1,17 +1,17 @@
 #!/bin/bash
 set -e
-# ============================================================
-# 路径与参数
-# ============================================================
-WORKDIR='/home/user2/jzhang_data/Dissertation/results/high_pa_obesity_uncouple_results/gsmap_results'
-ST_DIR='/home/user2/jzhang_data/Dissertation/code/gsMap_example_data/ST/human_embryos'
-RESOURCE_DIR='/home/user2/jzhang_data/Dissertation/code/gsMap_resource'
+# ============================================================================
+# Paths and parameters
+# ============================================================================
+WORKDIR='/home/user2/jzhang_data/results/high_pa_obesity_uncouple_results/gsmap_results'
+ST_DIR='/home/user2/jzhang_data/code/gsMap_example_data/ST/human_embryos'
+RESOURCE_DIR='/home/user2/jzhang_data/code/gsMap_resource'
 SUMSTATS='/home/Disk/Data2/imputation.bgen/PA_obesity_uncouple_GWAS/high_mvpa_bmi_uncouple_gsMap_format.sumstats.gz'
 TRAIT_NAME='high_pa_obesity_uncouple'
 
-# 关键参数（根据实际 h5ad 结构修改）
-ANNOTATION='substructure'      # ← obs 中的列名（81 个细分结构）
-DATA_LAYER='counts'            # ← layers 中的层名（注意是 counts 不是 count）
+# key parameters (adjust to the actual h5ad structure)
+ANNOTATION='substructure'      # <- column name in obs (81 substructures)
+DATA_LAYER='counts'            # <- layer name in layers (counts, not count)
 
 SAMPLES=(
     "CS20_E1S6.bin50.substructure"
@@ -24,9 +24,9 @@ SAMPLES=(
 
 mkdir -p ${WORKDIR}
 
-# ============================================================
-# Step 0: 计算 Slice Mean
-# ============================================================
+# ============================================================================
+# Step 0: compute the slice mean
+# ============================================================================
 SLICE_MEAN_FILE="${WORKDIR}/sample_slice_mean.parquet"
 
 gsmap create_slice_mean \
@@ -41,9 +41,9 @@ gsmap create_slice_mean \
     --slice_mean_output_file "${SLICE_MEAN_FILE}" \
     --data_layer "${DATA_LAYER}"
 
-# ============================================================
-# 对每个样本运行 Step 1~6
-# ============================================================
+# ============================================================================
+# run steps 1-6 for each sample
+# ============================================================================
 for SAMPLE in "${SAMPLES[@]}"
 do
     echo "=========================================="
@@ -60,7 +60,7 @@ do
         --annotation "${ANNOTATION}" \
         --data_layer "${DATA_LAYER}"
 
-    # ---- Step 2: latent_to_gene （引入 slice mean，人类数据无需 homolog） ----
+    # ---- Step 2: latent_to_gene (with slice mean; no homolog step for human data) ----
     gsmap run_latent_to_gene \
         --workdir "${WORKDIR}" \
         --sample_name "${SAMPLE}" \
@@ -95,14 +95,14 @@ do
         --w_file "${RESOURCE_DIR}/LDSC_resource/weights_hm3_no_hla/weights." \
         --num_processes 16
 
-    # ---- Step 5: cauchy_combination （单样本内） ----
+    # ---- Step 5: cauchy_combination (within a single sample) ----
     gsmap run_cauchy_combination \
         --workdir "${WORKDIR}" \
         --sample_name "${SAMPLE}" \
         --trait_name "${TRAIT_NAME}" \
         --annotation "${ANNOTATION}"
 
-    # ---- Step 6: 单样本报告 ----
+    # ---- Step 6: per-sample report ----
     gsmap run_report \
         --workdir "${WORKDIR}" \
         --sample_name "${SAMPLE}" \
@@ -112,9 +112,9 @@ do
         --top_corr_genes 50
 done
 
-# ============================================================
-# Step 7: 跨样本聚合 Cauchy combination
-# ============================================================
+# ============================================================================
+# Step 7: cross-sample aggregated Cauchy combination
+# ============================================================================
 gsmap run_cauchy_combination \
     --workdir "${WORKDIR}" \
     --sample_name_list ${SAMPLES[@]} \
@@ -126,12 +126,12 @@ gsmap run_cauchy_combination \
 
 
     
-# ============================================================
-# 路径与参数
-# ============================================================
-WORKDIR='/home/user2/jzhang_data/Dissertation/results/high_pa_obesity_uncouple_results/gsmap_results'
-ST_DIR='/home/user2/jzhang_data/Dissertation/code/gsMap_example_data/ST/human_embryos'
-RESOURCE_DIR='/home/user2/jzhang_data/Dissertation/code/gsMap_resource'
+# ============================================================================
+# Paths and parameters
+# ============================================================================
+WORKDIR='/home/user2/jzhang_data/results/high_pa_obesity_uncouple_results/gsmap_results'
+ST_DIR='/home/user2/jzhang_data/code/gsMap_example_data/ST/human_embryos'
+RESOURCE_DIR='/home/user2/jzhang_data/code/gsMap_resource'
 SUMSTATS='/home/Disk/Data2/imputation.bgen/PA_obesity_uncouple_GWAS/high_mvpa_bmi_uncouple_gsMap_format.sumstats.gz'
 TRAIT_NAME='high_pa_obesity_uncouple'
 
@@ -144,14 +144,14 @@ SLICE_MEAN_FILE="${WORKDIR}/sample_slice_mean.parquet"
 
 mkdir -p ${WORKDIR}
 
-# ============================================================
-# Step 0: 跳过（已有 slice mean）
-# ============================================================
+# ============================================================================
+# Step 0: skipped (slice mean already exists)
+# ============================================================================
 echo "Slice mean already exists: ${SLICE_MEAN_FILE}"
 
-# ============================================================
+# ============================================================================
 # Step 1: find_latent_representations
-# ============================================================
+# ============================================================================
 echo "=========================================="
 echo " Processing sample: ${SAMPLE}"
 echo "=========================================="
@@ -163,9 +163,9 @@ gsmap run_find_latent_representations \
     --annotation "${ANNOTATION}" \
     --data_layer "${DATA_LAYER}"
 
-# ============================================================
+# ============================================================================
 # Step 2: latent_to_gene
-# ============================================================
+# ============================================================================
 gsmap run_latent_to_gene \
     --workdir "${WORKDIR}" \
     --sample_name "${SAMPLE}" \
@@ -175,9 +175,9 @@ gsmap run_latent_to_gene \
     --num_neighbour_spatial 201 \
     --gM_slices "${SLICE_MEAN_FILE}"
 
-# ============================================================
+# ============================================================================
 # Step 3: generate_ldscore
-# ============================================================
+# ============================================================================
 for CHROM in {1..22}
 do
     gsmap run_generate_ldscore \
@@ -193,9 +193,9 @@ do
         --gene_window_enhancer_priority 'gene_window_first'
 done
 
-# ============================================================
+# ============================================================================
 # Step 4: spatial_ldsc
-# ============================================================
+# ============================================================================
 gsmap run_spatial_ldsc \
     --workdir "${WORKDIR}" \
     --sample_name "${SAMPLE}" \
@@ -204,18 +204,18 @@ gsmap run_spatial_ldsc \
     --w_file "${RESOURCE_DIR}/LDSC_resource/weights_hm3_no_hla/weights." \
     --num_processes 32
 
-# ============================================================
+# ============================================================================
 # Step 5: cauchy_combination
-# ============================================================
+# ============================================================================
 gsmap run_cauchy_combination \
     --workdir "${WORKDIR}" \
     --sample_name "${SAMPLE}" \
     --trait_name "${TRAIT_NAME}" \
     --annotation "${ANNOTATION}"
 
-# ============================================================
-# Step 6: 报告
-# ============================================================
+# ============================================================================
+# Step 6: report
+# ============================================================================
 gsmap run_report \
     --workdir "${WORKDIR}" \
     --sample_name "${SAMPLE}" \

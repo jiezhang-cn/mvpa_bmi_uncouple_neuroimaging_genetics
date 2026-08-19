@@ -42,11 +42,14 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
-# ---- paths ----
-AABC_IDP_DIR = r"C:/Users/张杰/Desktop/Cohort Data/AABC/AABC_Release2_StructuralIDPs"
-AABC_NIMG    = r"C:/Users/张杰/Desktop/Cohort Data/AABC/AABC_Release2_Non-imaging_Data-XL.csv"
-PHENO_CSV    = r"C:/Users/张杰/Desktop/PA_obesity_biological/data/aabc_pa_obesity_data.csv"
-OUT_DIR      = r"C:/Users/张杰/Desktop/PA_obesity_biological/results/AABC_replication"
+# ---- paths (set these to your own layout) ----
+AABC_ROOT    = os.environ.get("AABC_ROOT",    "/path/to/AABC")
+PROJECT_ROOT = os.environ.get("PROJECT_ROOT", "/path/to/PA_obesity_biological")
+
+AABC_IDP_DIR = os.path.join(AABC_ROOT, "AABC_Release2_StructuralIDPs")
+AABC_NIMG    = os.path.join(AABC_ROOT, "AABC_Release2_Non-imaging_Data-XL.csv")
+PHENO_CSV    = os.path.join(PROJECT_ROOT, "data", "aabc_pa_obesity_data.csv")
+OUT_DIR      = os.path.join(PROJECT_ROOT, "results", "AABC_replication")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ---- 1. Load cortical volumes (HCP MMP 1.0, 360 ROIs) ----
@@ -142,7 +145,7 @@ def perform_bootstrap(Y, n_samples):
 
 def calculate_feature_coef(X, Y, n_BS, covariates=None):
     samples, _ = perform_bootstrap(Y, n_BS)
-    # Regularised LDA: lsqr solver with Ledoit-Wolf automatic shrinkage —
+    # Regularised LDA: lsqr solver with Ledoit-Wolf automatic shrinkage --
     # required because N (~200) << p (381) makes the within-class covariance
     # matrix near-singular under the default solver.
     lda = LDA(solver="lsqr", shrinkage="auto")
@@ -201,8 +204,8 @@ print("\nDone.")
 
 
 
-""
-AABC rfMRI LDA — replication of UKB rfMRI ICA LDA, on Glasser-360 FC matrices
+"""
+AABC rfMRI LDA -- replication of UKB rfMRI ICA LDA, on Glasser-360 FC matrices
 collapsed to a network-level matrix.
 
 Two network choices supported, selectable via CLI:
@@ -242,14 +245,16 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
-# ---- paths ----
-RFMRI_DIR = (r"C:/Users/张杰/Desktop/Cohort Data/AABC/"
-             r"AABC_Release2_rfMRI_REST_FullCovarianceConnectivity")
-AABC_NIMG = (r"C:/Users/张杰/Desktop/Cohort Data/AABC/"
-             r"AABC_Release2_Non-imaging_Data-XL.csv")
-PHENO_CSV = r"C:/Users/张杰/Desktop/PA_obesity_biological/data/aabc_pa_obesity_data.csv"
-OUT_DIR   = r"C:/Users/张杰/Desktop/PA_obesity_biological/results/AABC_replication"
-CACHE_DIR = r"C:/Users/张杰/Desktop/PA_obesity_biological/data"
+# ---- paths (set these to your own layout) ----
+AABC_ROOT    = os.environ.get("AABC_ROOT",    "/path/to/AABC")
+PROJECT_ROOT = os.environ.get("PROJECT_ROOT", "/path/to/PA_obesity_biological")
+
+RFMRI_DIR = os.path.join(AABC_ROOT,
+                         "AABC_Release2_rfMRI_REST_FullCovarianceConnectivity")
+AABC_NIMG = os.path.join(AABC_ROOT, "AABC_Release2_Non-imaging_Data-XL.csv")
+PHENO_CSV = os.path.join(PROJECT_ROOT, "data", "aabc_pa_obesity_data.csv")
+OUT_DIR   = os.path.join(PROJECT_ROOT, "results", "AABC_replication")
+CACHE_DIR = os.path.join(PROJECT_ROOT, "data")
 os.makedirs(OUT_DIR, exist_ok=True)
 os.makedirs(CACHE_DIR, exist_ok=True)
 
@@ -318,9 +323,10 @@ def fetch_yeo17_for_glasser():
     if os.path.exists(cache):
         return np.load(cache)
 
-    parc_dir = (r"C:/Users/张杰/AppData/Local/Packages/PythonSoftwareFoundation."
-                r"Python.3.11_qbz5n2kfra8p0/LocalCache/local-packages/Python311/"
-                r"site-packages/enigmatoolbox/datasets/parcellations")
+    # Parcellation CSVs bundled with the installed enigmatoolbox package.
+    import enigmatoolbox.datasets
+    parc_dir = os.path.join(os.path.dirname(enigmatoolbox.datasets.__file__),
+                            "parcellations")
     glasser = np.genfromtxt(os.path.join(parc_dir, "glasser_360_conte69.csv"),
                             delimiter=",").astype(int)
     schaefer = np.genfromtxt(os.path.join(parc_dir, "schaefer_400_conte69.csv"),
@@ -361,7 +367,7 @@ def fetch_yeo17_for_glasser():
         labels_in_parcel = nets_per_vertex[m]
         labels_in_parcel = labels_in_parcel[labels_in_parcel > 0]
         if len(labels_in_parcel) == 0:
-            nets[pid - 1] = 0  # unmapped — will be excluded
+            nets[pid - 1] = 0  # unmapped -- will be excluded
             continue
         vals, counts = np.unique(labels_in_parcel, return_counts=True)
         nets[pid - 1] = vals[np.argmax(counts)]
@@ -590,9 +596,9 @@ def assemble_network_features(aabc_dir, net_choice):
     return X, ids, pair_labels, names
 
 
-# ============================================================
+# ============================================================================
 # Main
-# ============================================================
+# ============================================================================
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--net", choices=["cole12", "yeo17"], default="cole12",
