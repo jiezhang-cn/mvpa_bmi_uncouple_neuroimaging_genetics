@@ -1,4 +1,4 @@
-# Brain and genetic architectures of moderate-to-vigorous physical activity–body mass index decoupling with links to mental health
+# Neural and genetic architectures of moderate to vigorous physical activity and body mass index decoupling
 
 Analysis code for the study of **MVPA–BMI decoupling** in the UK Biobank (UKB) and the Aging Adult Brain Connectome (AABC).
 
@@ -15,7 +15,7 @@ interpretable as decoupling rather than as activity or adiposity alone.
 
 ## Study overview
 
-![Study design](figures/Figure1.png)
+![Study design](Figure1.png)
 
 *Figure 1. Study design. (1) Population profiles — phenome-wide association screen across 1,194
 phenotypes in UKB (N = 245,407), with mental-health-relevant hits replicated in AABC (N = 321).
@@ -24,8 +24,6 @@ validated in AABC (N = 403). (3) Genetic architectures — GWAS in European-ance
 (N = 211,259), followed by genome-wide fine-mapping, spatially resolved heritability mapping, and
 integrated effector-gene prioritization. (4) Causal links — bidirectional Mendelian randomization
 between the decoupled phenotypes and 17 psychiatric traits from the Psychiatric Genomics Consortium.*
-
-Full-resolution vector version: [figures/Figure1.pdf](figures/Figure1.pdf)
 
 ---
 
@@ -69,14 +67,8 @@ Robustness of the split was assessed across b ∈ {0, 0.05, …, 1.00}. AABC was
 │   └── 04_mendelian-randomization/
 │       ├── run_mr_analysis.sh                Driver for the bidirectional MR pipeline
 │       └── mr_pipeline.R                     CAUSE + two-sample MR + MR-PRESSO, both directions
-└── figures/
-    ├── Figure1.pdf                           Study design (vector)
-    └── Figure1.png                           Study design (raster preview, 200 dpi)
+└── Figure1.png                               Study design
 ```
-
-Directories are numbered in the order the analyses appear in the paper. Each script is standalone —
-there is no orchestrating master script, because the stages run on different machines and at very
-different time scales (the GWAS and fine-mapping steps are multi-day jobs on a compute node).
 
 ---
 
@@ -246,21 +238,6 @@ and Steiger filtering removes variants whose direction of effect is inconsistent
 A causal claim required **directionally concordant evidence from both**: CAUSE posterior support for the
 causal over the sharing model, and IVW MR robust to MR-PRESSO outlier correction.
 
-Practical details worth knowing before re-running, all handled in `mr_pipeline.R`:
-
-- **Resume-safe.** Both directions of a pair are pre-checked before any heavy I/O, and completed pairs
-  load their cached summaries instead of recomputing. Parsed GWAS are cached as `.rds`, instruments as
-  `.tsv`.
-- **Wall-clock timeouts.** `cause()` is capped at 120 min and `est_cause_params()` at 90 min, using
-  elapsed time only (`cpu = Inf`) so multi-threaded BLAS does not trip a CPU-time limit spuriously.
-- **Instrument fallback.** If a pair yields fewer than 3 usable SNPs at P < 5 × 10⁻⁸ after harmonisation
-  and Steiger filtering, the exposure is re-extracted at P < 1 × 10⁻⁵ and the pair retried.
-- **Extreme-value cleaning.** Before nuisance estimation, merged CAUSE datasets drop variants with
-  |z| > 38, non-finite estimates, or standard errors outside (1 × 10⁻⁴, 10). Pairs with fewer than
-  10⁵ overlapping SNPs are skipped.
-- Effect sizes are harmonised across input formats — beta/SE, log(OR)/SE, or Z with SE fixed at 1 — and
-  variants are filtered at INFO ≥ 0.8 where an INFO column exists.
-
 ---
 
 ## Software
@@ -290,59 +267,11 @@ gencode v46lift37 annotation, and the ABC/Roadmap enhancer BED.
 
 ---
 
-## Reproducing
-
-All paths in these scripts are absolute and point at the compute environment where the analyses were
-run. Before re-running anything, edit the path block at the top of each script to match your own layout —
-that is the only change most of them need. Concretely:
-
-- `gwas_BOLT_LMM.sh` — `BOLT_CMD`, `IMPUTE_DIR`, `PLINK_BED/BIM/FAM`, `SAMPLE_FILE`, and the LD-score
-  and genetic-map table paths.
-- `cojo_GCTA.sh` — `GCTA`, `REF_DIR` (expects `ref_chr1` … `ref_chr22`), and the `GWAS_MAP` entries.
-- `fine-mapping_GCTB.sh`, `gene_prioritization_FLAMES.sh`, `spatial_mapping_gsMap.sh` — the tool,
-  reference, and project directories at the top of each file.
-- `run_mr_analysis.sh` — `BASE`, the two MVPA summary-statistic paths, and the GWAS directories; it
-  passes everything else to `mr_pipeline.R` as command-line options, so the R script itself needs no
-  editing.
-- The brain-imaging scripts — `DATA_DIR` in the notebook; `AABC_IDP_DIR`, `AABC_NIMG`, `PHENO_CSV`, and
-  `OUT_DIR` in the AABC script.
-
-`run_mr_analysis.sh` also calls `plot_mr_summary.R`, a figure-only helper that is not part of this
-repository; drop that final block to run the pipeline itself.
-
-Order of execution: the PheWAS and brain-imaging tracks are independent of each other and of the
-genomics track. Within genomics, GWAS must run first, and its summary statistics feed COJO,
-fine-mapping, gsMap, and MR. Gene prioritization additionally needs the MAGMA and PoPS outputs to
-already exist.
-
-Note that GCTB, gsMap, and BOLT-LMM as configured here request 24–56 threads and substantial memory;
-scale `--thread`, `--threads`, `--num_processes`, and `--numThreads` to your hardware.
-
----
-
-## Data availability
-
-No individual-level data are contained in this repository, and none can be redistributed by us.
-
-UK Biobank data are available to approved researchers through the
-[UK Biobank Access Management System](https://www.ukbiobank.ac.uk/enable-your-research/apply-for-access).
-This study used applications **55005** and **62663**. AABC data are distributed through the
-[NIMH Data Archive / Connectome Coordination Facility](https://www.humanconnectome.org/).
-Psychiatric GWAS summary statistics are available from the
-[Psychiatric Genomics Consortium](https://pgc.unc.edu/for-researchers/download-results/); cohort
-composition, sample sizes, release versions, genome builds, and citations for every input dataset are
-listed in Supplementary Table 24 of the paper.
-
-Summary-level results supporting the figures are provided as Source Data and Supplementary Data with the
-published article.
-
----
-
 ## Citation
 
 > Zhang J, Huang D, Wang Y, Xu Y, Huang Y, Wang S, Han M, Zhao J, Chen W, Gengzong, Ye D, Wang X, Ma H.
-> Brain and genetic architectures of moderate-to-vigorous physical activity–body mass index decoupling
-> with links to mental health.
+> Neural and genetic architectures of moderate to vigorous physical activity and body mass index
+> decoupling.
 
 J.Z. and D.H. contributed equally as co-first authors.
 
@@ -351,12 +280,3 @@ Correspondence: Hao Ma (hma@sinh.ac.cn), Xuan Wang (x_wang@fudan.edu.cn), Dongqi
 Affiliations: Shanghai Institute of Nutrition and Health, Chinese Academy of Sciences · School of Public
 Health, Anhui University of Science and Technology · Institute of Nutrition, School of Public Health,
 Fudan University.
-
----
-
-## Acknowledgements
-
-We thank all participants and professionals contributing to the UK Biobank and the Aging Adult Brain
-Connectome. Supported by the Youth Scientist Project (2025YFA1805800) of the National Key Research and
-Development Program, the Noncommunicable Chronic Diseases-National Science and Technology Major Project
-(2025ZD0550602), and a Fudan University startup grant (IHI2645003Y).
