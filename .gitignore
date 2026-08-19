@@ -1,0 +1,22 @@
+# Editor / OS
+.DS_Store
+Thumbs.db
+~$*
+.vscode/
+.idea/
+
+# Notebook / Python
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# Analysis outputs and logs (not tracked)
+*.log
+*.rds
+*.gz
+*.parquet
