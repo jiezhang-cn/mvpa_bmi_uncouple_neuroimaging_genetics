@@ -265,7 +265,7 @@ gencode v46lift37 annotation, and the ABC/Roadmap enhancer BED.
 
 ## Citation
 
-> Zhang J, Huang D, Wang Y, Xu Y, Huang Y, Wang S, Han M, Zhao J, Chen W, Sheng A, Mu M, Zong G, Ye D, Wang X, Ma H.
+> Zhang J, Huang D, Wang Y, Xu Y, Huang Y, Wang S, Han M, Zhao J, Chen W, Sheng A, Zong G, Ye D, Wang X, Ma H.
 > Neural and genetic architectures of moderate to vigorous physical activity and body mass index
 > decoupling.
 
